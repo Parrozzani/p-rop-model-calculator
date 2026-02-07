@@ -1,0 +1,9 @@
+{
+  "name": "PROP1 \u2013 Type 1 ROP Calculator",
+  "short_name": "PROP1",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2c3e50",
+  "icons": []
+}

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P-ROP Model – Type 1 ROP Calculator</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2c3e50">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  color:#000;
+  line-height: 1.3;
+}
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+
+label { display: block; margin-top: 10px; font-weight: bold; }
+input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: #f4f6f8;
+}
+
+button {
+  margin-top: 14px;
+  padding: 12px;
+  font-size: 16px;
+  width: 100%;
+  background:#2c3e50;
+  color:white;
+  border:none;
+  border-radius:6px;
+}
+
+.alert {
+  margin-top:10px;
+  padding:10px;
+  background:#fff3cd;
+  border:1px solid #664d03;
+  color:#664d03;
+  display:none;
+  font-size:13px;
+}
+
+.result-box {
+  margin-top:16px;
+  padding:14px;
+  text-align:center;
+  font-size:18px;
+  font-weight:bold;
+  display:none;
+}
+
+.high { color:#842029; }
+.low { color:#0f5132; }
+
+.report {
+  margin-top:14px;
+  font-size:13px;
+}
+
+.scale {
+  margin-top:14px;
+}
+
+.scale-bar {
+  position: relative;
+  height: 14px;
+  background: linear-gradient(to right, #2e7d32, #f9a825, #c62828);
+  border-radius: 8px;
+}
+
+.scale-marker {
+  position: absolute;
+  top: -6px;
+  width: 3px;
+  height: 26px;
+  background: #000;
+}
+
+.scale-cutoff {
+  position: absolute;
+  top: 2px;
+  width: 2px;
+  height: 10px;
+  background: #000;
+  opacity: 0.5;
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-top:2px;
+}
+
+.disclaimer {
+  margin-top:14px;
+  padding-top:10px;
+  font-size:10.5px;
+  border-top:1px solid #999;
+}
+
+.checkbox { margin-top:10px; font-size:13px; }
+.note { margin-top:10px; font-size:11px; color:#555; }
+
+@page {
+  size: A4 portrait;
+  margin: 18mm;
+}
+
+@media print {
+  button, .checkbox, .alert, .note {
+    display: none !important;
+  }
+  body {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1 { margin-top: 0; }
+}
+
+.cutoff-label {
+    font-size: 10px;
+    font-weight: normal;
+    transform: translateY(-6px);
+    background: white;
+    padding: 0 2px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>P-ROP Model – Type 1 ROP Calculator</h1>
+
+<label>Patient ID (optional)
+<input type="text" id="pid"></label>
+
+<label>First name (optional)
+<input type="text" id="fname"></label>
+
+<label>Last name (optional)
+<input type="text" id="lname"></label>
+
+<label>Date of birth (optional)
+<input type="date" id="dob"></label>
+
+<label>Gestational Age (weeks)
+<input type="number" id="ga" step="0.01"></label>
+
+<label>Birth Weight (g)
+<input type="number" id="bw"></label>
+
+<label>Platelet count at birth (×10⁹/L)
+<input type="number" id="plt"></label>
+
+<button onclick="calculate()">Calculate</button>
+<button onclick="window.print()">Print / Export to PDF</button>
+
+<div id="alertBox" class="alert">
+You must read and accept the disclaimer and terms of use before performing the calculation.
+</div>
+
+<div id="resultBox" class="result-box"></div>
+
+<div class="disclaimer">
+<b>Disclaimer and Terms of Use</b><br><br>
+This application is intended for research and clinical support purposes only.
+It does not replace clinical judgment.
+All calculations are performed locally.
+No patient data are stored or transmitted.
+The authors assume no responsibility for clinical decisions made using this tool.
+</div>
+
+<div class="checkbox">
+<input type="checkbox" id="accept">
+<label for="accept">I have read and accept the disclaimer and terms of use</label>
+</div>
+
+<div class="note">
+Formula: P<sub>ROP1</sub> = 1 / (1 + e<sup>−(14.0999 − 0.333·GA − 0.00628·BW − 0.00891·PLT)</sup>)<br>
+Cut-off: 0.44886
+</div>
+
+<script>
+function calculate() {
+
+  if (!accept.checked) {
+    alertBox.style.display = "block";
+    resultBox.style.display = "none";
+    return;
+  } else {
+    alertBox.style.display = "none";
+  }
+
+  var GA = parseFloat(ga.value);
+  var BW = parseFloat(bw.value);
+  var PLT = parseFloat(plt.value);
+  if (isNaN(GA) || isNaN(BW) || isNaN(PLT)) return;
+
+  var PID = pid.value;
+  var FN = fname.value;
+  var LN = lname.value;
+  var DOB = dob.value;
+
+  var logit = 14.0999 - 0.333*GA - 0.00628*BW - 0.00891*PLT;
+  var p = 1 / (1 + Math.exp(-logit));
+  var timestamp = new Date().toLocaleString();
+
+  var risk = (p >= 0.44886) ? "HIGH RISK for Type 1 ROP" : "LOW RISK for Type 1 ROP";
+  var cls = (p >= 0.44886) ? "high" : "low";
+
+  var posPatient = Math.min(Math.max(p * 100, 0), 100);
+  var posCut = 44.886;
+
+  resultBox.style.display = "block";
+  resultBox.className = "result-box " + cls;
+
+  resultBox.innerHTML = `
+    P<sub>ROP1</sub> = ${p.toFixed(3)}<br>
+    ${risk}
+
+    <div class="scale">
+      <div class="scale-bar">
+        <div class="scale-marker" style="left:${posPatient}%"></div>
+        <div class="scale-cutoff" style="left:${posCut}%"></div>
+      </div>
+      <div class="scale-labels">
+        <span>0</span>
+        <span>1</span>
+      </div>
+      <div style="font-size:11px;margin-top:4px;">
+        Patient probability: ${p.toFixed(3)} | Cut-off: 0.449
+      </div>
+    </div>
+
+    <div class="report">
+      <hr>
+      ${PID ? "<b>Patient ID:</b> " + PID + "<br>" : ""}
+      ${(FN || LN) ? "<b>Name:</b> " + FN + " " + LN + "<br>" : ""}
+      ${DOB ? "<b>Date of birth:</b> " + DOB + "<br>" : ""}
+      <b>Gestational Age:</b> ${GA} weeks<br>
+      <b>Birth Weight:</b> ${BW} g<br>
+      <b>Platelet Count:</b> ${PLT} ×10⁹/L<br>
+      <b>Date & Time:</b> ${timestamp}<br>
+      <b>Disclaimer accepted:</b> Yes
+    </div>
+  `;
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
