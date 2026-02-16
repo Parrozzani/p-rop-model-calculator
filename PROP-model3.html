@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>P-ROP Global | Clinical Risk Assessment</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- DESIGN TOKENS --- */
+        :root {
+            --medical-blue: #0a4275;
+            --clinical-teal: #00b4d8;
+            --bg-light: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning-bg: #fffbeb;
+            --warning-border: #fcd34d;
+            --warning-text: #92400e;
+            --border-color: #e2e8f0;
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --disabled-gray: #cbd5e1;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 1.5rem; }
+
+        /* --- NAVIGATION --- */
+        header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .brand {
+            font-weight: 800;
+            color: var(--medical-blue);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .nav-links { display: flex; gap: 2rem; }
+        .nav-item {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+        .nav-item:hover, .nav-item.active { color: var(--medical-blue); }
+
+        /* --- PAGE SECTIONS --- */
+        .page-section { display: none; animation: fadeIn 0.4s ease-out; min-height: 80vh; }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- HOME PAGE --- */
+        .hero {
+            text-align: center;
+            padding: 5rem 1rem;
+            background: linear-gradient(135deg, var(--medical-blue) 0%, #002b4d 100%);
+            color: white;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 3rem;
+        }
+        .hero h1 { font-size: 2.75rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2.5rem; }
+        
+        .cta-btn {
+            background: var(--clinical-teal);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); background: #f59e0b; }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
+        }
+        .feature-card h3 { color: var(--medical-blue); margin-top: 0; }
+
+        /* Hide the duplicate formula on the screen */
+        .print-only-formula { display: none; }
+
+        /* --- CALCULATOR PAGE --- */
+        .calc-wrapper { padding: 3rem 0; display: flex; justify-content: center; }
+        .calc-card {
+            background: var(--white);
+            width: 100%;
+            max-width: 800px;
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+        }
+
+        .patient-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px dashed var(--bg-light);
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        input {
+            padding: 0.9rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        input:focus { outline: none; border-color: var(--clinical-teal); box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.1); }
+
+        .clinical-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+
+        /* --- DISCLAIMER BOX --- */
+        .disclaimer-section {
+            margin-top: 2rem;
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .disclaimer-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--warning-text);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .disclaimer-text {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--medical-blue);
+        }
+
+        .checkbox-label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        /* --- PRIVACY PAGE STYLES --- */
+        .privacy-content {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            margin: 3rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
+        }
+        .privacy-content .formula-container {display: none;}
+        .privacy-content h2 { color: var(--medical-blue); border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-top: 0; }
+        .privacy-content h3 { color: var(--text-main); margin-top: 2rem; }
+        .privacy-content ul { padding-left: 1.5rem; color: var(--text-main); }
+        .privacy-content li { margin-bottom: 0.5rem; }
+
+        /* --- BUTTONS --- */
+        .btn-calculate {
+            width: 100%;
+            background: var(--medical-blue);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-calculate:hover:not(:disabled) { background: #003b61; }
+        
+        /* Disabled State */
+        .btn-calculate:disabled {
+            background-color: var(--disabled-gray);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* --- RESULTS --- */
+        .result-box {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--bg-light);
+            display: none;
+        }
+
+        .prob-display {
+            text-align: center;
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--medical-blue);
+            line-height: 1;
+            margin: 0.5rem 0;
+        }
+
+        .risk-badge {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .gauge-track {
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            margin: 2rem 0 0.5rem 0;
+        }
+        .gauge-gradient { height: 100%; width: 100%; background: linear-gradient(to right, #22c55e 0%, #eab308 45%, #ef4444 100%); }
+        .gauge-needle {
+            position: absolute; top: 0; width: 4px; height: 100%; background: #000;
+            box-shadow: 0 0 0 1px white; transform: translateX(-50%); transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2;
+        }
+        
+        .gauge-cutoff {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: transparent;
+            border-left: 2px dashed #1e293b;
+            left: 44.9%;
+            z-index: 1;
+            opacity: 0.7;
+        }
+        .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+
+        .action-box {
+            background: #f1f5f9;
+            border-left: 5px solid var(--medical-blue);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .btn-print {
+            display: block; margin: 0 auto; background: white; color: var(--medical-blue); border: 2px solid var(--medical-blue);
+            padding: 0.8rem 2rem; border-radius: 8px; font-weight: 700; cursor: pointer;
+        }
+        .btn-print:hover { background: #f0f7fa; }
+
+        /* --- FOOTER --- */
+        footer { background: white; border-top: 1px solid var(--border-color); padding: 3rem 0; margin-top: auto; color: var(--text-muted); font-size: 0.85rem; }
+        .formula-container { background: var(--bg-light); padding: 1.5rem; border-radius: 8px; text-align: center; margin-bottom: 2rem; border: 1px solid var(--border-color); }
+        .math-equation { font-family: 'Times New Roman', Times, serif; font-size: 1.1rem; color: var(--text-main); font-style: italic; }
+
+        /* --- HIDE PRINT ELEMENTS ON SCREEN --- */
+        .print-only-formula { display: none; }
+
+        /* --- MOBILE LAYOUT FIX --- */
+        @media (max-width: 768px) {
+            
+            .nav-inner { flex-direction: column; height: auto; padding: 1rem 0; gap: 0.5rem; }
+            .brand { font-size: 1.2rem; width: 100%; justify-content: center; white-space: nowrap; }
+            .nav-links { width: 100%; justify-content: center; gap: 1.5rem; }
+
+            .clinical-grid, 
+            .patient-header { 
+                display: grid;
+                grid-template-columns: 1fr !important;
+                gap: 1rem;
+                width: 100%;
+            }
+            
+            .input-group[style*="grid-column"] { 
+                grid-column: auto !important; 
+            }
+
+            .container { padding: 0 15px; width: 100%; box-sizing: border-box; }
+            .calc-card { padding: 1.5rem 1rem; width: 100%; box-sizing: border-box; }
+            .privacy-content { padding: 1.5rem; margin: 1.5rem 0; }
+            
+            input { width: 100%; box-sizing: border-box; }
+        }
+
+        /* =========================================
+        UNIVERSAL PRINT STYLES (One-Page)
+        ========================================= */
+        @media print {
+            @page { margin: 10mm; size: A4 portrait; }
+            
+            html, body { 
+                width: 210mm;
+                height: 99%;
+                max-height: 275mm; 
+                margin: 0; 
+                padding: 0;
+                background: white; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+                overflow: hidden; 
+            }
+
+            body {
+                padding: 5mm; 
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            header, .hero, .nav-links, .btn-calculate, .disclaimer-section, .cta-btn, .btn-print, .formula-container { 
+                display: none !important; 
+            }
+            
+            #page-privacy { display: none !important; }
+
+            main {
+                flex-grow: 1; 
+                display: block;
+                margin-bottom: 0.5rem;
+            }
+
+            .container { width: 100%; max-width: 100%; padding: 0; margin: 0; }
+            .calc-card { box-shadow: none; border: none; padding: 0; width: 100%; }
+            .calc-wrapper { padding: 0; margin: 0; }
+            
+            .patient-header { 
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr !important; 
+                gap: 0.5rem; 
+                margin-bottom: 1.5rem !important;
+                padding-bottom: 0 !important;
+                border: none !important;
+            }
+
+            .clinical-grid { 
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr !important; 
+                gap: 1rem; 
+                margin-bottom: 0.5rem;
+            }
+
+            .result-box { display: block !important; border: none; margin-top: 1rem; }
+            .prob-display { font-size: 2.5rem; color: black; margin: 0.5rem 0; }
+            .risk-badge { color: black !important; border: 1px solid #000; margin-bottom: 1rem; } 
+
+            .print-only-formula { 
+                display: block !important; 
+                margin-top: 1rem;
+                border: 1px solid #ddd;
+                padding: 0.5rem;
+            }
+            .action-box, .result-box { page-break-inside: avoid; }
+
+            input { border: none !important; padding: 0; font-weight: bold; background: transparent; }
+            label { font-size: 0.75rem; color: #666; margin-bottom: 0; text-transform: uppercase; }
+
+            .print-only-header { 
+                display: block !important; 
+                border-bottom: 2px solid black; 
+                margin-bottom: 0.5rem; 
+                padding-bottom: 0.5rem; 
+            }
+
+            footer { 
+                position: absolute;
+                margin-top: auto;
+                bottom: 0;
+                border: none; 
+                padding-top: 1rem; 
+                text-align: center;
+                display: block !important;
+            }
+            
+            .page-section { display: none; }
+            #page-calc { display: block !important; }
+        }
+        .print-only-header { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-inner">
+            <div class="brand" onclick="switchPage('home')">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+
+                <circle cx="15" cy="12" r="2.5" fill="currentColor" fill-opacity="0.15" />
+                <circle cx="15" cy="12" r="2.5" />
+
+                <path d="M15 12 C 14 9 12 7 9 7"/>
+
+                <path d="M15 12 C 14 15 12 17 9 17"/>
+            </svg>
+                <span>P-ROP Clinical Calculator</span>
+            </div>
+            <nav class="nav-links">
+                <a class="nav-item active" id="nav-home" onclick="switchPage('home')">Overview</a>
+                <a class="nav-item" id="nav-calc" onclick="switchPage('calc')">Calculator</a>
+                <a class="nav-item" id="nav-priv" onclick="switchPage('privacy')">Privacy & Use</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="page-home" class="page-section active">
+            <div class="hero">
+                <div class="container">
+                    <h1>Retinopathy of Prematurity<br>Risk Assessment</h1>
+                    <p>A validated clinical decision support tool for predicting Type 1 ROP in preterm infants using the P-ROP logistic regression model.</p>
+                    <button class="cta-btn" onclick="switchPage('calc')">Go to Calculator</button>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>Validated Model</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Based exclusively on parameters readily available immediately after birth (Gestational Age, Birth Weight, Platelet counts).</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Immediate Stratification</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Instantly classifies infants as Low or High Risk using a validated probability cutoff (0.449) early after birth.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Clinical Support</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Provides clinical support in early referral of high-risk infants to tertiary care centers preserving the disease’s narrow therapeutic window for effective treatment.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-calc" class="page-section">
+            <div class="container">
+                <div class="calc-wrapper">
+                    <div class="calc-card">
+                        <div class="print-only-header">
+                            <h1 style="margin:0;">P-ROP Clinical Report</h1>
+                            <p id="printDate" style="margin:0; font-size: 0.9rem;"></p>
+                        </div>
+
+                        <div class="patient-header">
+                            <div class="input-group">
+                                <label>Patient Name</label>
+                                <input type="text" placeholder="Patient full name">
+                            </div>
+                            <div class="input-group">
+                                <label>Patient ID</label>
+                                <input type="text" placeholder="Record ID">
+                            </div>
+                        </div>
+
+                        <div class="clinical-grid">
+                            <div class="input-group">
+                                <label>Gestational Age (Weeks)</label>
+                                <input type="number" id="ga" step="0.1" placeholder="e.g. 28.2">
+                            </div>
+                            <div class="input-group">
+                                <label>Birth Weight (Grams)</label>
+                                <input type="number" id="bw" step="1" placeholder="e.g. 1100">
+                            </div>
+                            <div class="input-group" style="grid-column: span 2;">
+                                <label>Platelet Count at Birth (×10⁹/L)</label>
+                                <input type="number" id="plt" step="1" placeholder="e.g. 150">
+                            </div>
+                        </div>
+
+                        <div class="disclaimer-section">
+                            <div class="disclaimer-title">Disclaimer and Terms of Use</div>
+                            <div class="disclaimer-text">
+                                This application is intended for research and clinical support purposes only. It does not replace clinical judgment. All calculations are performed locally. No patient data are stored or transmitted. The authors assume no responsibility for clinical decisions made using this tool.
+                            </div>
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="agreeCheckbox">
+                                <label for="agreeCheckbox" class="checkbox-label">I have read and accept the disclaimer and terms of use</label>
+                            </div>
+                        </div>
+
+                        <button class="btn-calculate" id="calcBtn" onclick="calculateRisk()" disabled>Calculate Risk Probability</button>
+
+                        <div id="resultBox" class="result-box">
+                            <div style="text-align: center;">
+                                <span style="font-weight: 700; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Estimated Probability (P<sub>ROP1</sub>)</span>
+                                <div class="prob-display" id="probValue">0.000</div>
+                                <div id="riskBadge" class="risk-badge">--</div>
+                            </div>
+
+                            <div class="gauge-track">
+                                <div class="gauge-gradient"></div>
+                                <div class="gauge-cutoff" title="Cut-off: 0.449"></div> 
+                                <div id="needle" class="gauge-needle" style="left: 0%;"></div>
+                            </div>
+                            <div class="gauge-labels">
+                                <span>0.0 (Low)</span>
+                                <span>Cut-off: 0.449</span>
+                                <span>1.0 (High)</span>
+                            </div>
+
+                            <div class="action-box">
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--medical-blue); text-transform: uppercase; font-size: 0.8rem;">Clinical Guidance</h4>
+                                <p id="actionText" style="margin: 0; font-weight: 500;">Please enter parameters to see recommendations.</p>
+                            </div>
+
+                            <div class="formula-container print-only-formula">
+                                <p style="margin-bottom: 0.2rem; font-weight: 700; color: var(--medical-blue); font-size: 0.8rem;">The P-ROP Equation</p>
+                                <div class="math-equation" style="font-size: 0.85rem; margin: 0;">
+                                    P<sub>ROP</sub> = 1 / (1 + e<sup>-z</sup>)
+                                </div>
+                                <div class="math-equation" style="font-size: 0.75rem; margin-top: 0.2rem; color: var(--text-muted);">
+                                    z = 14.0999 - 0.333(GA) - 0.00628(BW) - 0.00891(PLT)
+                                </div>
+                            </div>
+
+                            <button class="btn-print" onclick="printReport()">Print Clinical Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-privacy" class="page-section">
+            <div class="container">
+                <div class="privacy-content">
+                    <h2>Privacy & Terms of Use</h2>
+                    
+                    <h3>1. Data Privacy & Local Computation</h3>
+                    <p>The P-ROP calculator was developed as a standalone clinician-side tool, in which all computations are performed locally on the user’s device, similarly to a standard calculator.</p>
+                    <ul>
+                        <li>No clinical data are transmitted, stored, or logged.</li>
+                        <li>No patient data are stored on any server or cloud database.</li>
+                        <li>This ensures full compliance with data privacy and confidentiality standards.</li>
+                    </ul>
+
+                    <h3>2. Clinical Disclaimer</h3>
+                    <p>This application is intended for research and clinical support purposes only.</p>
+                    <ul>
+                        <li>It does <strong>not</strong> replace clinical judgment or physical examination.</li>
+                        <li>It is designed to assist qualified medical professionals in risk stratification.</li>
+                    </ul>
+
+                    <h3>3. Liability</h3>
+                    <p>The authors assume no responsibility for clinical decisions made using this tool. The user assumes full responsibility for the use of this application in a clinical setting.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="formula-container">
+                <p style="margin-bottom: 0.5rem; font-weight: 700; color: var(--medical-blue);">The P-ROP Equation</p>
+                <div class="math-equation">
+                    P<sub>ROP</sub> = 1 / (1 + e<sup>-z</sup>)
+                </div>
+                <div class="math-equation" style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--text-muted);">
+                    z = 14.0999 - 0.333(GA) - 0.00628(BW) - 0.00891(PLT)
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; gap: 2rem;">
+                <div>
+                    <strong>Disclaimer:</strong> This application is intended for research and clinical support purposes only. It does not replace clinical judgment. All calculations are performed locally. No patient data are stored or transmitted.
+                </div>
+                <div style="text-align: right; min-width: 200px;">
+                    &copy; 2026 P-ROP Calculator <br>
+                    Version 1.0 (Clinical Release)
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- DISCLAIMER LOGIC ---
+        const agreeCheckbox = document.getElementById('agreeCheckbox');
+        const calcBtn = document.getElementById('calcBtn');
+
+        agreeCheckbox.addEventListener('change', function() {
+            calcBtn.disabled = !this.checked;
+        });
+
+        // --- NAVIGATION ---
+        function switchPage(pageId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            // Add active class to clicked link
+            if(pageId === 'home') document.getElementById('nav-home').classList.add('active');
+            if(pageId === 'calc') document.getElementById('nav-calc').classList.add('active');
+            if(pageId === 'privacy') document.getElementById('nav-priv').classList.add('active');
+
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected page
+            document.getElementById('page-' + pageId).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        // --- CALCULATION ---
+        function calculateRisk() {
+            const ga = parseFloat(document.getElementById('ga').value);
+            const bw = parseFloat(document.getElementById('bw').value);
+            const plt = parseFloat(document.getElementById('plt').value);
+
+            if (isNaN(ga) || isNaN(bw) || isNaN(plt)) {
+                alert("Please ensure all clinical parameters (GA, Birth Weight, Platelets) are entered correctly.");
+                return;
+            }
+
+            const z = 14.0999 + (-0.333 * ga) + (-0.00628 * bw) + (-0.00891 * plt);
+            const prob = 1 / (1 + Math.exp(-z));
+            const cutoff = 0.44886;
+
+            const resultBox = document.getElementById('resultBox');
+            const probValue = document.getElementById('probValue');
+            const riskBadge = document.getElementById('riskBadge');
+            const needle = document.getElementById('needle');
+            const actionText = document.getElementById('actionText');
+
+            resultBox.style.display = 'block';
+            probValue.textContent = prob.toFixed(3);
+            
+            // Visual Needle Clamp
+            let needlePos = prob * 100;
+            if(needlePos < 1) needlePos = 1; 
+            if(needlePos > 99) needlePos = 99;
+            needle.style.left = needlePos + "%";
+
+            if (prob >= cutoff) {
+                riskBadge.textContent = "High Risk for Type 1 ROP";
+                riskBadge.style.color = "var(--danger)";
+                actionText.textContent = "The patient exceeds the high-risk threshold. This high-risk infants need to be followed in a tertiary care center with adequate treatment facilities prior to the probable development of Type 1 ROP";
+            } else {
+                riskBadge.textContent = "Low Risk";
+                riskBadge.style.color = "var(--success)";
+                actionText.textContent = "The patient is below the high-risk threshold. Continue standard ROP screening protocol.";
+            }
+
+            resultBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function printReport() {
+            document.getElementById('printDate').textContent = "Generated: " + new Date().toLocaleString();
+            window.print();
+        }
+    </script>
+</body>
+</html>
